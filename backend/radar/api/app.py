@@ -313,6 +313,10 @@ def trigger_run(body: RunRequest | None = None):
 
 @app.get("/api/keywords")
 def list_keywords(limit: int = 300, s: Session = Depends(get_session)):
+    return keyword_rows(s, limit)
+
+
+def keyword_rows(s: Session, limit: int) -> list[dict]:
     rows = s.scalars(select(Keyword).order_by(Keyword.candidates_found.desc(), Keyword.priority.desc())
                      .limit(limit)).all()
     return [{"id": k.id, "term": k.term, "source": k.source, "status": k.status, "priority": k.priority,

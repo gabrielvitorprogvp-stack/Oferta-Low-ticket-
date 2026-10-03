@@ -6,6 +6,7 @@
   serve                API + dashboard (+ scheduler, se RADAR_SCHEDULE != off)
   scheduler            só o scheduler (processo bloqueante)
   rescore              recalcula scores/status das ofertas (sem navegar)
+  export-artifact      exporta os dados para o app (artifact) no claude.ai
   test-telegram        envia mensagem de teste
 """
 from __future__ import annotations
@@ -33,6 +34,8 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("scheduler")
     sub.add_parser("test-telegram")
     sub.add_parser("rescore", help="recalcula scores/status de todas as ofertas sem navegar")
+    ex = sub.add_parser("export-artifact", help="exporta ofertas/resumo em JSON para o app (artifact)")
+    ex.add_argument("--out", default=None)
     a = p.parse_args(argv)
     setup_logging()
 
@@ -91,6 +94,10 @@ def main(argv: list[str] | None = None) -> int:
         pl.update_clusters()
         pl.score_and_alert()  # 2ª passada usa os clusters atualizados
         print(f"{len(pl.touched_offers)} ofertas recalculadas")
+    elif a.cmd == "export-artifact":
+        from radar.export import export_artifact
+        out = export_artifact(a.out)
+        print(f"exportado em {out}")
     elif a.cmd == "test-telegram":
         from radar.notifications.telegram import TelegramNotifier
         t = TelegramNotifier()

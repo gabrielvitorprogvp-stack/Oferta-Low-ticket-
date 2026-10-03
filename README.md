@@ -171,6 +171,13 @@ python -m radar test-telegram
 
 Desenvolvimento do front com hot reload: `cd dashboard && npm run dev` (proxy para :8000).
 
+### Usar pelo app do Claude
+O radar também tem uma versão que abre dentro do claude.ai (`artifact/radar-low-ticket.html`),
+publicada como artifact com banco próprio. A coleta continua rodando no computador; depois de
+uma rodada, `python -m radar export-artifact` gera os JSON em `backend/data/artifact_export/`, que
+o Claude envia para o banco do app ("sincronize o radar"). Mudanças de status feitas no app ficam
+salvas no banco do app.
+
 ### Agendamento
 - `RADAR_SCHEDULE=3x` (08h, 14h, 20h) ou `daily` (09h) ou cron (`"30 7,13,19 * * *"`), fuso
   `America/Sao_Paulo`. Roda dentro de `python -m radar serve` ou isolado com

@@ -1,0 +1,452 @@
+<title>Radar Low Ticket</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: painel de radar escuro — resumo no topo, lista de ofertas, detalhe em tela própria (#o<id>) */
+:root {
+  color-scheme: dark;
+  --bg: #0a0c10; --s1: #11151b; --s2: #171c24; --s3: #202733; --line: #252d39; --line2: #334051;
+  --fg: #edf0f4; --fg2: #a4adbb; --fg3: #6f7a8a;
+  --accent: #3987e5; --accent-soft: rgba(57,135,229,.15);
+  --hot: #ff7a1a; --hot-bg: rgba(255,122,26,.13);
+  --watch: #f2c230; --watch-bg: rgba(242,194,48,.13);
+  --blue: #2fc46b; --blue-bg: rgba(47,196,107,.13);
+  --sat: #ef5050; --sat-bg: rgba(239,80,80,.13);
+  --neu: #8b93a1; --neu-bg: rgba(139,147,161,.13);
+  --f-display: 'Sora', 'IBM Plex Sans', system-ui, sans-serif;
+  --f-body: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--f-body); margin: 0; }
+a { color: inherit; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-inline: 16px; padding-block: 18px 48px; display: flex; flex-direction: column; gap: 16px; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--fg3); } .sec { color: var(--fg2); }
+
+header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.scope { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line2); position: relative; overflow: hidden;
+  background: radial-gradient(circle, rgba(255,122,26,.22), transparent 65%), var(--s2); flex: none; }
+.scope::before, .scope::after { content: ""; position: absolute; inset: 9px; border-radius: 50%; border: 1px solid rgba(255,122,26,.35); }
+.scope::after { inset: 16px; }
+.scope i { position: absolute; left: 50%; top: 50%; width: 50%; height: 2px; background: linear-gradient(90deg, var(--hot), transparent);
+  transform-origin: 0 50%; animation: sweep 3.2s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .scope i { animation: none; transform: rotate(-35deg); } }
+@keyframes sweep { to { transform: rotate(360deg); } }
+h1 { font-family: var(--f-display); font-size: 21px; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+.tagline { font-size: 12px; color: var(--fg3); letter-spacing: .04em; }
+.pill { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--fg2); padding: 6px 11px;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--s1); }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--neu); flex: none; }
+.dot.warn { background: var(--watch); } .dot.ok { background: var(--blue); } .dot.bad { background: var(--sat); }
+
+.kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.kpi { background: var(--s1); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+.kpi .l { font-size: 11.5px; color: var(--fg3); }
+.kpi .v { font-family: var(--f-display); font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.kpi.hot { border-color: rgba(255,122,26,.45); background: linear-gradient(180deg, rgba(255,122,26,.10), transparent 75%), var(--s1); }
+.kpi.hot .v { color: var(--hot); }
+
+.panel { background: var(--s1); border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
+.ph { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.ph h2 { font-size: 14px; margin: 0; font-weight: 600; }
+.pb { padding: 14px; }
+.notice { font-size: 12.5px; color: var(--fg2); background: var(--s2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.notice b { color: var(--fg); }
+
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { border: 1px solid var(--line); background: var(--s2); padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--fg2); display: inline-flex; gap: 6px; align-items: center; }
+.chip[aria-pressed="true"] { color: var(--fg); border-color: var(--accent); background: var(--accent-soft); }
+.chip .n { font-family: var(--f-mono); font-size: 11px; color: var(--fg3); }
+.inp { background: var(--s2); border: 1px solid var(--line); border-radius: 9px; padding: 7px 10px; color: var(--fg); min-width: 0; font: inherit; }
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; }
+.toolbar .inp { flex: 1 1 180px; }
+
+.badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.b-EMERGING { color: var(--hot); background: var(--hot-bg); }
+.b-WATCHING { color: var(--watch); background: var(--watch-bg); }
+.b-MATURE, .b-DECLINING { color: var(--sat); background: var(--sat-bg); }
+.b-NEW, .b-TESTING, .b-DISCARDED { color: var(--neu); background: var(--neu-bg); }
+.b-blue { color: var(--blue); background: var(--blue-bg); }
+.ver { font-size: 10px; font-weight: 700; letter-spacing: .05em; padding: 2px 6px; border-radius: 4px; }
+.ver-VERIFIED { color: var(--blue); background: var(--blue-bg); }
+.ver-PARTIAL { color: var(--watch); background: var(--watch-bg); }
+.ver-NOT_VERIFIED, .ver-BLOCKED { color: var(--sat); background: var(--sat-bg); }
+
+/* tabela (desktop) */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--fg3); font-weight: 600; padding: 9px 9px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 10px 9px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.r { text-align: right; }
+tbody tr { cursor: pointer; }
+tbody tr:hover { background: var(--s2); }
+tbody tr.EMERGING { box-shadow: inset 3px 0 0 var(--hot); }
+.nm { font-weight: 600; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sub { font-size: 12px; color: var(--fg3); max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.score { display: inline-flex; flex-direction: column; gap: 4px; min-width: 70px; }
+.score .row { display: flex; gap: 6px; align-items: baseline; justify-content: flex-end; }
+.score .v { font-family: var(--f-mono); font-weight: 600; }
+.score .c { font-family: var(--f-mono); font-size: 10px; color: var(--fg3); }
+.bar { height: 4px; border-radius: 4px; background: var(--s3); overflow: hidden; }
+.bar > i { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
+.bar.g > i { background: var(--blue); }
+.up { color: var(--blue); } .zero { color: var(--fg3); }
+.accl { font-size: 11px; color: var(--fg2); margin-top: 3px; white-space: nowrap; }
+
+/* cartões (celular) */
+.cards { display: none; flex-direction: column; }
+.card { display: grid; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); text-align: left; background: none; border-left: 0; border-right: 0; border-top: 0; width: 100%; }
+.card.EMERGING { box-shadow: inset 3px 0 0 var(--hot); }
+.card .hd { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.card .t { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.card .meta { font-size: 12px; color: var(--fg3); }
+.card .nums { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.card .nums div { background: var(--s2); border-radius: 8px; padding: 6px 8px; min-width: 0; }
+.card .nums .l { font-size: 10.5px; color: var(--fg3); }
+.card .nums .v { font-family: var(--f-mono); font-weight: 600; }
+.empty { padding: 32px 14px; text-align: center; color: var(--fg3); }
+
+.alerts { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+.alert { display: flex; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--line); text-decoration: none; min-width: 0; }
+.alert .t { font-weight: 600; font-size: 13px; }
+.alert .m { font-size: 12px; color: var(--fg2); overflow-wrap: anywhere; }
+
+/* detalhe */
+.back { background: none; border: 0; color: var(--fg3); padding: 0; font-size: 13px; }
+.back:hover { color: var(--fg); }
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: start; }
+.hero h2 { font-family: var(--f-display); font-size: 22px; margin: 8px 0 6px; line-height: 1.25; text-wrap: balance; overflow-wrap: anywhere; }
+.meta-row { display: flex; gap: 6px 14px; flex-wrap: wrap; font-size: 13px; color: var(--fg2); }
+.links { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+.tag { font-size: 12px; padding: 4px 9px; border-radius: 6px; background: var(--s3); color: var(--fg2); text-decoration: none; }
+a.tag:hover { color: var(--fg); }
+.bigs { display: flex; gap: 10px; }
+.big { background: var(--s1); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; min-width: 140px; }
+.big .l { font-size: 12px; color: var(--fg3); }
+.big .v { font-family: var(--f-mono); font-size: 28px; font-weight: 600; }
+.big .v small { font-size: 13px; color: var(--fg3); }
+.big .c { font-size: 11px; color: var(--fg3); }
+.minis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.mini { background: var(--s1); border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; min-width: 0; }
+.mini .l { font-size: 11px; color: var(--fg3); }
+.mini .v { font-family: var(--f-mono); font-size: 18px; font-weight: 600; }
+.g2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.chart { position: relative; }
+.chart svg { display: block; width: 100%; height: auto; }
+.tip { position: absolute; pointer-events: none; background: var(--s3); border: 1px solid var(--line2); border-radius: 8px; padding: 6px 9px; font-size: 12px; white-space: nowrap; transform: translate(-50%, -115%); }
+.note { font-size: 12px; color: var(--fg3); border-left: 2px solid var(--line2); padding-left: 10px; margin-top: 10px; }
+.brk { display: flex; flex-direction: column; gap: 9px; }
+.brk .it { display: grid; grid-template-columns: minmax(0, 1fr) 40px; gap: 10px; align-items: center; font-size: 12.5px; }
+.brk .it .lb { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.tab { border: 0; background: none; padding: 6px 10px; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--fg2); }
+.tab[aria-selected="true"] { background: var(--s3); color: var(--fg); }
+.ads { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 10px; }
+.ad { background: var(--s2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; text-decoration: none; font-size: 12px; min-width: 0; }
+.ad .h { font-weight: 600; font-size: 13px; overflow-wrap: anywhere; }
+.ad .b { color: var(--fg2); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ad .f { display: flex; justify-content: space-between; gap: 6px; color: var(--fg3); margin-top: auto; }
+dl.kv { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 7px 14px; margin: 0; font-size: 13px; }
+dl.kv dt { color: var(--fg3); }
+dl.kv dd { margin: 0; overflow-wrap: anywhere; }
+ul.ls { margin: 0; padding-left: 18px; } ul.ls li { margin: 2px 0; }
+.warnbox { font-size: 12.5px; color: var(--watch); background: var(--watch-bg); border-radius: 8px; padding: 9px 11px; }
+.status-sel { background: var(--s2); border: 1px solid var(--line); border-radius: 6px; color: var(--fg); padding: 3px 8px; font-size: 12px; }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--s3); border: 1px solid var(--line2); padding: 8px 14px; border-radius: 10px; font-size: 13px; z-index: 9; }
+
+@media (max-width: 1100px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .minis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 760px) {
+  .tbl-wrap { display: none; } .cards { display: flex; }
+  .g2, .hero { grid-template-columns: minmax(0, 1fr); }
+  .bigs { flex-wrap: wrap; } .big { flex: 1 1 130px; min-width: 0; }
+  dl.kv { grid-template-columns: minmax(0, 1fr); gap: 2px; } dl.kv dd { margin-bottom: 8px; }
+}
+@media (max-width: 480px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .minis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>
+
+<div class="wrap" id="app">
+  <header class="top">
+    <div class="brand">
+      <div class="scope" aria-hidden="true"><i></i></div>
+      <div><h1>Radar Low Ticket</h1><div class="tagline">ESCALA EMERGENTE · META ADS LIBRARY · BRASIL</div></div>
+    </div>
+    <span class="pill" id="runpill"><span class="dot"></span>Carregando dados do radar…</span>
+  </header>
+  <main id="view">
+    <div class="panel"><div class="empty">Carregando ofertas monitoradas…</div></div>
+  </main>
+</div>
+
+<script>
+const STATUS = {
+  EMERGING: ['🔥', 'Escala emergente', 'Emergente'], WATCHING: ['🟡', 'Em observação', 'Observação'],
+  TESTING: ['🧪', 'Teste', 'Teste'], NEW: ['✨', 'Novo', 'Novo'], MATURE: ['🔴', 'Saturado / maduro', 'Saturado'],
+  DECLINING: ['📉', 'Em queda', 'Em queda'], DISCARDED: ['⛔', 'Descartado', 'Descartado'],
+};
+const ACC = { FORTISSIMA: '🚀 Fortíssima', FORTE: '⚡ Forte', MODERADA: '↗ Moderada', FRACA: '→ Fraca', ESTAVEL: '＝ Estável', QUEDA: '↘ Queda', SEM_DADOS: '· Sem dados' };
+const FILTERS = [['active', 'Todas'], ['emerging', '🔥 Escala emergente'], ['blue', '🟢 Mar azul'], ['new', '✨ Novo'], ['watching', '🟡 Em observação'], ['mature', '🔴 Maduro'], ['discarded', '⛔ Descartado']];
+const VEL = { growth: ['Crescimento recente', 25], upload_freq: ['Frequência de uploads', 20], survival: ['Sobrevivência de antigos', 20], hooks: ['Variedade de hooks', 15], formats: ['Variedade de formatos', 10], funnel: ['Consistência do funil', 10] };
+const BLUE = { pain: ['Força da dor', 15], clarity: ['Clareza da oferta', 10], intent: ['Intenção de compra', 10], competition: ['Concorrência observada', 15], similar: ['Anunciantes semelhantes', 10], differentiation: ['Diferenciação', 10], own_version: ['Versão própria viável', 10], delivery: ['Facilidade de entrega', 8], creative_power: ['Força criativa possível', 6], low_cost: ['Baixo custo de produção', 6] };
+
+const state = { offers: new Map(), summary: null, filter: 'active', q: '', sort: 'velocity', tab: 'ads', loaded: false, db: null, canWrite: true };
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const num = (v) => v == null ? '—' : Number(v).toLocaleString('pt-BR');
+const brl = (v) => v == null ? '—' : Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const toDate = (iso) => iso ? new Date(/Z$|[+-]\d\d:\d\d$/.test(iso) || iso.length <= 10 ? iso : iso + 'Z') : null;
+const dBR = (iso) => { const d = toDate(iso); return d ? d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—'; };
+const ago = (iso) => { const d = toDate(iso); if (!d) return '—'; const s = (Date.now() - d) / 1000; return s < 3600 ? `${Math.max(1, Math.round(s / 60))} min` : s < 86400 ? `${Math.round(s / 3600)} h` : `${Math.round(s / 86400)} d`; };
+const badge = (st, short) => { const s = STATUS[st] || ['•', st, st]; return `<span class="badge b-${esc(st)}" title="${esc(s[1])}">${s[0]} ${esc(short ? s[2] : s[1])}</span>`; };
+const ver = (v) => `<span class="ver ver-${esc(v)}">${{ VERIFIED: 'VERIFICADO', PARTIAL: 'PARCIAL', NOT_VERIFIED: 'NÃO VERIFICADO', BLOCKED: 'BLOQUEADO' }[v] || esc(v)}</span>`;
+const delta = (v) => v == null ? '<span class="zero">—</span>' : v > 0 ? `<span class="up mono">+${v}</span>` : `<span class="zero mono">${v}</span>`;
+const score = (v, c, g) => v == null ? '<span class="muted">—</span>' : `<span class="score"><span class="row"><span class="v">${Math.round(v)}</span><span class="c">conf ${c == null ? '—' : Math.round(c)}</span></span><span class="bar ${g ? 'g' : ''}"><i style="width:${Math.max(2, Math.min(100, v))}%"></i></span></span>`;
+function toast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2600); }
+
+function matches(o) {
+  const f = state.filter, st = o.status;
+  if (f === 'active' && st === 'DISCARDED') return false;
+  if (f === 'emerging' && st !== 'EMERGING') return false;
+  if (f === 'blue' && !((o.blue_ocean_score ?? 0) >= 60 && st !== 'DISCARDED')) return false;
+  if (f === 'new' && st !== 'NEW') return false;
+  if (f === 'watching' && !['WATCHING', 'TESTING'].includes(st)) return false;
+  if (f === 'mature' && !['MATURE', 'DECLINING'].includes(st)) return false;
+  if (f === 'discarded' && st !== 'DISCARDED') return false;
+  if (state.q) { const q = state.q.toLowerCase(); if (![o.name, o.advertiser, o.niche, o.domain].some((x) => (x || '').toLowerCase().includes(q))) return false; }
+  return true;
+}
+function countFor(f) { const prev = state.filter, pq = state.q; state.filter = f; state.q = ''; const n = [...state.offers.values()].filter(matches).length; state.filter = prev; state.q = pq; return n; }
+
+function renderPill() {
+  const run = state.summary?.runs?.[0];
+  const pill = $('#runpill');
+  if (!run) { pill.innerHTML = '<span class="dot"></span>' + (state.loaded ? 'Nenhuma rodada sincronizada' : 'Carregando dados do radar…'); return; }
+  const cls = run.status === 'completed' ? 'ok' : run.status === 'failed' ? 'bad' : 'warn';
+  pill.innerHTML = `<span class="dot ${cls}"></span>Última rodada #${run.id} há ${ago(run.finished_at || run.started_at)} · ${esc(run.status === 'partial' ? 'parcial' : run.status)}`;
+}
+
+function renderList() {
+  const offers = [...state.offers.values()];
+  const key = { velocity: 'velocity_score', blue: 'blue_ocean_score', recent: 'first_seen_at', price: 'price_brl' }[state.sort];
+  const rows = offers.filter(matches).sort((a, b) => (b[key] ?? -1) > (a[key] ?? -1) ? 1 : (b[key] ?? -1) < (a[key] ?? -1) ? -1 : 0);
+  const active = offers.filter((o) => o.status !== 'DISCARDED');
+  const emerging = offers.filter((o) => o.status === 'EMERGING').length;
+  const advs = new Set(active.map((o) => o.advertiser_id)).size;
+  const day = Date.now() - 864e5;
+  const newToday = active.filter((o) => (toDate(o.first_seen_at) || 0) >= day).length;
+  const alerts = state.summary?.alerts || [];
+  const alerts24 = alerts.filter((a) => (toDate(a.created_at) || 0) >= day).length;
+  const meta = state.summary?.runs?.[0]?.meta_status;
+
+  $('#view').innerHTML = `
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <section class="kpis" aria-label="Resumo">
+      <div class="kpi"><div class="l">Ofertas monitoradas</div><div class="v">${num(active.length)}</div></div>
+      <div class="kpi hot"><div class="l">🔥 Escalas emergentes</div><div class="v">${num(emerging)}</div></div>
+      <div class="kpi"><div class="l">✨ Novas ofertas (24h)</div><div class="v">${num(newToday)}</div></div>
+      <div class="kpi"><div class="l">Anunciantes c/ oferta ativa</div><div class="v">${num(advs)}</div></div>
+      <div class="kpi"><div class="l">🔔 Alertas (24h)</div><div class="v">${num(alerts24)}</div></div>
+    </section>
+    <div class="notice">A coleta roda no seu computador (<span class="mono">python -m radar run</span>). Este app mostra o último retrato sincronizado${meta ? ` · coleta Meta: ${ver(meta)}` : ''}. Para atualizar, rode uma garimpagem e peça ao Claude: <b>“sincronize o radar”</b>. Status que você muda aqui ficam salvos.</div>
+    <section class="panel">
+      <div class="ph"><h2>🔔 Alertas recentes</h2></div>
+      <div class="alerts">${alerts.length ? alerts.slice(0, 6).map((a) => `
+        <a class="alert" href="${a.offer_id ? '#o' + a.offer_id : '#'}"><span aria-hidden="true">${a.type === 'EMERGING_SCALE' ? '🔥' : a.type === 'ACCELERATION' ? '🚀' : '⚠️'}</span>
+        <div style="min-width:0"><div class="t">${esc(a.title)}</div><div class="m">${esc((a.message || '').split('\n').filter(Boolean).slice(1, 5).join(' · '))}</div><div class="m muted">há ${ago(a.created_at)}</div></div></a>`).join('')
+        : '<div class="empty" style="grid-column:1/-1;padding:16px">Sem alertas. Eles só aparecem com sinal relevante: entrada em escala emergente ou aceleração medida entre rodadas.</div>'}</div>
+    </section>
+    <section class="panel">
+      <div class="ph" style="flex-direction:column;align-items:stretch">
+        <div class="chips" role="group" aria-label="Filtros">${FILTERS.map(([k, l]) => `<button class="chip" data-f="${k}" aria-pressed="${state.filter === k}">${l}<span class="n">${countFor(k)}</span></button>`).join('')}</div>
+        <div class="toolbar">
+          <input class="inp" id="q" type="search" placeholder="Buscar oferta, anunciante, nicho…" value="${esc(state.q)}" aria-label="Buscar">
+          <select class="inp" id="sort" aria-label="Ordenar" style="flex:0 1 200px">
+            ${[['velocity', 'Velocity'], ['blue', 'Mar azul'], ['recent', 'Mais novas'], ['price', 'Preço']].map(([k, l]) => `<option value="${k}" ${state.sort === k ? 'selected' : ''}>Ordenar: ${l}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      ${rows.length ? `
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Oferta</th><th>Anunciante</th><th>Nicho</th><th class="r">Preço</th><th class="r">Criat.</th><th class="r">+7 dias</th><th class="r">+14 dias</th><th class="r">Velocity</th><th class="r">Mar azul</th><th>Status</th></tr></thead>
+        <tbody>${rows.map((o) => `
+          <tr class="${esc(o.status)}" data-id="${o.id}" tabindex="0">
+            <td><div class="nm" title="${esc(o.name)}">${esc(o.name || o.domain)}</div><div class="sub">${esc([o.product_format, o.checkout_platform, o.domain].filter(Boolean).join(' · '))}</div></td>
+            <td><div class="nm" style="max-width:140px;font-weight:500">${esc(o.advertiser)}</div></td>
+            <td><div class="sub" style="max-width:120px;color:var(--fg2);font-size:13px">${esc(o.niche || '—')}</div></td>
+            <td class="r mono">${brl(o.price_brl)}</td><td class="r mono">${num(o.creatives)}</td>
+            <td class="r">${delta(o.delta_7d ?? o.new_7d)}</td><td class="r">${delta(o.delta_14d ?? o.new_14d)}</td>
+            <td class="r">${score(o.velocity_score, o.velocity_confidence)}<div class="accl">${ACC[o.acceleration] || '—'}${o.acceleration_estimated && o.acceleration && o.acceleration !== 'SEM_DADOS' ? ' *' : ''}</div></td>
+            <td class="r">${score(o.blue_ocean_score, o.blue_ocean_confidence, true)}${(o.blue_ocean_score ?? 0) >= 60 ? '<div class="accl" style="color:var(--blue)">🟢 mar azul</div>' : ''}</td>
+            <td>${badge(o.status, true)}</td>
+          </tr>`).join('')}</tbody></table></div>
+      <div class="cards">${rows.map((o) => `
+        <button class="card ${esc(o.status)}" data-id="${o.id}">
+          <div class="hd"><div style="min-width:0"><div class="t">${esc(o.name || o.domain)}</div><div class="meta">${esc(o.advertiser)} · ${esc(o.niche || 'nicho —')}</div></div>${badge(o.status, true)}</div>
+          <div class="nums">
+            <div><div class="l">Preço</div><div class="v">${o.price_brl == null ? '—' : 'R$' + Math.round(o.price_brl)}</div></div>
+            <div><div class="l">Criativos</div><div class="v">${num(o.creatives)}</div></div>
+            <div><div class="l">Velocity</div><div class="v">${o.velocity_score == null ? '—' : Math.round(o.velocity_score)}</div></div>
+            <div><div class="l">Mar azul</div><div class="v" style="color:${(o.blue_ocean_score ?? 0) >= 60 ? 'var(--blue)' : 'inherit'}">${o.blue_ocean_score == null ? '—' : Math.round(o.blue_ocean_score)}</div></div>
+          </div>
+          <div class="meta">+7d ${delta(o.delta_7d ?? o.new_7d)} · +14d ${delta(o.delta_14d ?? o.new_14d)} · ${ACC[o.acceleration] || '—'}${o.acceleration_estimated ? ' (estimada)' : ''}</div>
+        </button>`).join('')}</div>
+      <div class="note" style="margin:12px">+7/+14 dias = variação real entre rodadas quando há histórico; sem histórico, criativos lançados no período. * = aceleração estimada pelas datas de início.</div>`
+      : `<div class="empty">${state.offers.size ? 'Nenhuma oferta neste filtro.' : 'Nenhuma oferta sincronizada ainda. Rode uma garimpagem no computador e peça ao Claude para sincronizar.'}</div>`}
+    </section>
+  </div>`;
+  document.querySelectorAll('[data-f]').forEach((b) => b.onclick = () => { state.filter = b.dataset.f; renderList(); });
+  document.querySelectorAll('[data-id]').forEach((r) => { r.onclick = () => { location.hash = 'o' + r.dataset.id; }; r.onkeydown = (e) => { if (e.key === 'Enter') location.hash = 'o' + r.dataset.id; }; });
+  const q = $('#q'); q.oninput = () => { state.q = q.value; const pos = q.selectionStart; renderList(); const n = $('#q'); n.focus(); n.setSelectionRange(pos, pos); };
+  $('#sort').onchange = (e) => { state.sort = e.target.value; renderList(); };
+}
+
+function lineChart(points, unit) {
+  if (!points.length) return '<div class="empty">Sem rodadas registradas ainda.</div>';
+  const W = 440, H = 200, pl = 30, pr = 14, pt = 14, pb = 24;
+  const xs = points.map((p) => toDate(p.x).getTime()), minX = Math.min(...xs), maxX = Math.max(...xs);
+  const maxRaw = Math.max(...points.map((p) => p.y)) * 1.15 || 5;
+  const step = Math.pow(10, Math.floor(Math.log10(maxRaw))); const maxY = Math.max(5, Math.ceil(maxRaw / step) * step);
+  const sx = (t) => pl + (maxX === minX ? (W - pl - pr) / 2 : (t - minX) / (maxX - minX) * (W - pl - pr));
+  const sy = (y) => pt + (H - pt - pb) * (1 - y / maxY);
+  const path = points.map((p, i) => `${i ? 'L' : 'M'}${sx(xs[i]).toFixed(1)},${sy(p.y).toFixed(1)}`).join(' ');
+  const area = points.length > 1 ? `<path d="${path} L${sx(xs.at(-1))},${sy(0)} L${sx(xs[0])},${sy(0)} Z" fill="var(--accent-soft)"/>` : '';
+  const ticks = [0, maxY / 2, maxY];
+  const last = points.at(-1);
+  return `<div class="chart">
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Quantidade de ${esc(unit)} por data">
+      ${ticks.map((t) => `<line x1="${pl}" x2="${W - pr}" y1="${sy(t)}" y2="${sy(t)}" stroke="var(--line)"/><text x="${pl - 7}" y="${sy(t) + 4}" text-anchor="end" fill="var(--fg3)" font-size="11" font-family="IBM Plex Mono, monospace">${Math.round(t)}</text>`).join('')}
+      <text x="${sx(xs[0])}" y="${H - 6}" text-anchor="${points.length > 1 ? 'start' : 'middle'}" fill="var(--fg3)" font-size="11" font-family="IBM Plex Mono, monospace">${dBR(points[0].x)}</text>
+      ${points.length > 1 ? `<text x="${sx(xs.at(-1))}" y="${H - 6}" text-anchor="end" fill="var(--fg3)" font-size="11" font-family="IBM Plex Mono, monospace">${dBR(last.x)}</text>` : ''}
+      ${area}<path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      ${points.map((p, i) => `<circle cx="${sx(xs[i])}" cy="${sy(p.y)}" r="4.5" fill="var(--accent)" stroke="var(--s1)" stroke-width="2"/>`).join('')}
+      <text x="${sx(xs.at(-1)) + (points.length > 1 ? -2 : 10)}" y="${sy(last.y) - 9}" text-anchor="${points.length > 1 ? 'end' : 'start'}" fill="var(--fg)" font-size="12" font-weight="600" font-family="IBM Plex Mono, monospace">${last.y}</text>
+    </svg></div>`;
+}
+
+function launchBars(items, days = 40) {
+  const end = new Date(); end.setHours(0, 0, 0, 0);
+  const map = Object.fromEntries(items || []); const data = [];
+  for (let i = days - 1; i >= 0; i--) { const d = new Date(end); d.setDate(end.getDate() - i); const k = d.toISOString().slice(0, 10); data.push([k, map[k] || 0]); }
+  const older = (items || []).filter(([k]) => k < data[0][0]).reduce((a, [, n]) => a + n, 0);
+  const W = 440, H = 140, pl = 22, pr = 6, pt = 10, pb = 22, ih = H - pt - pb, bw = (W - pl - pr) / days;
+  const maxY = Math.max(2, ...data.map((d) => d[1]));
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Criativos lançados por dia">
+    <line x1="${pl}" x2="${W - pr}" y1="${pt + ih}" y2="${pt + ih}" stroke="var(--line)"/>
+    <text x="${pl - 6}" y="${pt + 9}" text-anchor="end" fill="var(--fg3)" font-size="11" font-family="IBM Plex Mono, monospace">${maxY}</text>
+    <text x="${pl}" y="${H - 5}" fill="var(--fg3)" font-size="11" font-family="IBM Plex Mono, monospace">${dBR(data[0][0])}</text>
+    <text x="${W - pr}" y="${H - 5}" text-anchor="end" fill="var(--fg3)" font-size="11" font-family="IBM Plex Mono, monospace">hoje</text>
+    ${data.map(([k, n], i) => { if (!n) return ''; const h = n / maxY * ih, x = pl + i * bw + 1, w = Math.max(2, bw - 2), r = Math.min(4, w / 2, h);
+      return `<path d="M${x},${pt + ih} V${pt + ih - h + r} Q${x},${pt + ih - h} ${x + r},${pt + ih - h} H${x + w - r} Q${x + w},${pt + ih - h} ${x + w},${pt + ih - h + r} V${pt + ih} Z" fill="var(--accent)"><title>${new Date(k + 'T12:00').toLocaleDateString('pt-BR')}: ${n} criativo(s)</title></path>`; }).join('')}
+  </svg>${older ? `<div class="note">+${older} criativo(s) ativo(s) lançado(s) antes da janela de ${days} dias.</div>` : ''}</div>`;
+}
+
+const breakdown = (comp, labels, ev, g) => Object.entries(comp || {}).map(([k, v]) => `<div class="it"><div class="lb"><span>${esc(labels[k]?.[0] || k)} <span class="muted">(${labels[k]?.[1] ?? ''})</span>${ev?.[k] ? `<span class="muted"> — ${esc(ev[k])}</span>` : ''}</span><span class="bar ${g ? 'g' : ''}"><i style="width:${labels[k] ? v / labels[k][1] * 100 : 0}%"></i></span></div><span class="mono r">${v}</span></div>`).join('');
+const kv = (items) => `<dl class="kv">${items.filter(([, v]) => v != null && v !== '' && !(Array.isArray(v) && !v.length)).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${Array.isArray(v) ? `<ul class="ls">${v.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : esc(v)}</dd>`).join('')}</dl>`;
+
+function renderOffer(id) {
+  const o = state.offers.get(Number(id));
+  if (!o) { $('#view').innerHTML = `<div class="panel"><div class="empty">${state.loaded ? 'Oferta não encontrada.' : 'Carregando…'} <a href="#">Voltar ao radar</a></div></div>`; return; }
+  const m = o.metrics || {}, acc = o.acceleration_detail || {}, lp = (o.landing_pages || [])[0], L = lp?.data || {};
+  const vel = o.score_breakdown?.velocity || {}, blue = o.score_breakdown?.blue_ocean || {}, mod = o.modeling || {}, adv = o.advertiser_detail || {};
+  const pts = (o.snapshots || []).map((s) => ({ x: s.taken_at, y: s.distinct_creatives }));
+  const tabs = [['ads', `Anúncios (${(o.ads || []).length})`], ['hooks', `Hooks (${(m.hooks || []).length})`], ['funnel', 'Funil'], ['model', 'Modelagem'], ['demand', `Demanda (${(o.demand || []).length})`], ['competitors', `Concorrentes (${(o.competitors || []).length})`], ['history', 'Histórico']];
+  const tabBody = {
+    ads: () => `<div class="ads">${(o.ads || []).map((a) => `<a class="ad" href="${esc(a.library_url)}" target="_blank" rel="noopener" style="${a.is_active ? '' : 'opacity:.5'}">
+        <div class="h">${esc(a.hook || '—')}</div><div class="b">${esc(a.body)}</div>
+        <div class="f"><span>${esc(a.display_format || '')} · ${esc(a.cta_text || '—')}</span><span>${a.is_active ? 'desde ' + dBR(a.start_date) : 'inativo'}</span></div>
+        <div class="f"><span class="mono">crv ${esc(a.fingerprint)}</span>${a.collation_count > 1 ? `<span>${a.collation_count} versões</span>` : ''}</div></a>`).join('') || '<div class="empty">Sem anúncios.</div>'}</div>`,
+    hooks: () => `<ul class="ls">${(m.hooks || []).map((h) => `<li>${esc(h)}</li>`).join('')}</ul>`,
+    funnel: () => lp ? `<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">${ver(lp.status)}<span class="muted">capturada há ${ago(lp.fetched_at)}</span></div>${L.currency_note ? `<div class="warnbox" style="margin-bottom:10px">${esc(L.currency_note)}</div>` : ''}
+      ${kv([['Headline', L.headline], ['Subheadline', L.subheadline], ['Promessa', L.promise], ['Mecanismo', L.mechanism], ['Preço', L.price_brl != null ? brl(L.price_brl) : null], ['Preço anterior', L.price_old_brl != null ? brl(L.price_old_brl) : null], ['Entregáveis', L.deliverables], ['Bônus', L.bonuses], ['Prova', L.proof], ['Depoimentos', L.testimonials ? `${L.testimonials} menções` : null], ['Garantia', L.guarantee], ['Urgência', L.urgency], ['CTAs', L.ctas], ['Checkout', L.checkout_url], ['Order bump', L.order_bump ? 'sim' : null], ['Upsell', L.upsell ? 'sim' : null], ['Quiz', L.quiz ? 'sim' : 'não'], ['VSL', L.vsl ? 'sim' : 'não'], ['Estrutura', L.structure], ['URL final', lp.final_url], ['Erro', lp.error]])}
+      <div class="note">Screenshots ficam na pasta do radar no seu computador.</div>` : '<div class="empty">Landing page ainda não analisada.</div>',
+    model: () => `<div class="warnbox" style="margin-bottom:12px">⚖️ ${esc(mod.aviso || 'Use como inteligência de mercado. Não copie marca, nome, textos, criativos ou propriedade intelectual.')}</div>
+      ${kv([['Dor', mod.dor], ['Público', mod.publico], ['Mecanismo', mod.mecanismo], ['Promessa', mod.promessa], ['Estrutura', mod.estrutura], ['Ângulos usados', mod.angulos ? Object.entries(mod.angulos).map(([a, n]) => `${a} (${n})`) : null], ['Modelo comercial', mod.modelo_comercial ? Object.entries(mod.modelo_comercial).filter(([, v]) => v != null && v !== 0).map(([k, v]) => `${k}: ${v === true ? 'sim' : v}`) : null], ['Palavras-chave', mod.palavras_chave], ['Diferenciação sugerida', mod.diferenciacao_sugerida]])}`,
+    demand: () => `<div style="margin-bottom:10px">${ver(o.demand_status)} <span class="muted">Fontes externas. Busca bloqueada fica como não verificado.</span></div>${(o.demand || []).length ? `<ul class="ls">${o.demand.map((d) => `<li><span class="tag">${esc(d.kind)}</span> <a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.title)}</a> <span class="muted">${esc((d.snippet || '').slice(0, 160))}</span></li>`).join('')}</ul>` : '<div class="empty">Sem evidências coletadas ainda.</div>'}`,
+    competitors: () => (o.competitors || []).length ? `<div class="tbl-wrap" style="display:block"><table><thead><tr><th>Oferta</th><th>Anunciante</th><th class="r">Preço</th><th class="r">Criat.</th><th class="r">Velocity</th><th>Status</th></tr></thead><tbody>${o.competitors.map((c) => `<tr data-go="${c.id}"><td><div class="nm">${esc(c.name)}</div></td><td>${esc(c.advertiser)}</td><td class="r mono">${brl(c.price_brl)}</td><td class="r mono">${num(c.creatives)}</td><td class="r mono">${Math.round(c.velocity_score ?? 0)}</td><td>${badge(c.status, true)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Nenhum concorrente no mesmo nicho ainda.</div>',
+    history: () => `<h3 style="font-size:13px;margin:0 0 8px">Status</h3><ul class="ls">${(o.history || []).map(([t, s, why]) => `<li><span class="mono muted">${toDate(t)?.toLocaleString('pt-BR')}</span> ${badge(s, true)} <span class="sec">${esc(why)}</span></li>`).join('')}</ul>
+      <h3 style="font-size:13px;margin:16px 0 8px">Rodadas (snapshots)</h3><div style="overflow-x:auto"><table><thead><tr><th>Data</th><th class="r">Criativos</th><th class="r">Novos 7d</th><th class="r">Novos 14d</th><th class="r">Antigos</th><th class="r">Cobertura</th><th>Dado</th></tr></thead><tbody>${[...(o.snapshots || [])].reverse().map((s) => `<tr style="cursor:default"><td class="mono">${toDate(s.taken_at)?.toLocaleString('pt-BR')}</td><td class="r mono">${s.distinct_creatives}</td><td class="r mono">${s.new_7d}</td><td class="r mono">${s.new_14d}</td><td class="r mono">${s.old_active}</td><td class="r mono">${s.coverage != null ? Math.round(s.coverage * 100) + '%' : '—'}</td><td>${ver(s.verification)}</td></tr>`).join('')}</tbody></table></div>
+      <h3 style="font-size:13px;margin:16px 0 8px">Triagem</h3>${kv([['Checks', o.validation?.checks ? Object.entries(o.validation.checks).map(([k, v]) => `${k}: ${v == null ? 'não observado' : v ? 'sim' : 'não'}`) : null], ['Motivos', o.validation?.reasons], ['Descarte', o.discard_reason], ['Estágio', `${o.stage} — ${m.stage_reason || ''}`], ['Descoberto via', adv.discovered_via]])}`,
+  };
+  $('#view').innerHTML = `
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <button class="back" id="back">← Voltar ao radar</button>
+    <section class="hero">
+      <div style="min-width:0">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">${badge(o.status)}${(o.blue_ocean_score ?? 0) >= 60 ? '<span class="badge b-blue">🟢 Mar azul</span>' : ''}${ver(o.verification)}${o.status_locked ? '<span class="tag">status fixado por você</span>' : ''}</div>
+        <h2>${esc(o.name)}</h2>
+        <div class="meta-row"><span>👤 <b>${esc(o.advertiser)}</b></span>${o.niche ? `<span>🧭 ${esc(o.niche)}</span>` : ''}<span>💰 ${brl(o.price_brl)}${o.price_source ? ` <span class="muted">(${esc(o.price_source)})</span>` : ''}</span>${o.product_format ? `<span>📦 ${esc(o.product_format)}</span>` : ''}${o.checkout_platform ? `<span>🛒 ${esc(o.checkout_platform)}</span>` : ''}<span class="muted">visto em ${dBR(o.first_seen_at)}</span></div>
+        <div class="links">
+          ${o.landing_url ? `<a class="tag" href="${esc(o.landing_url)}" target="_blank" rel="noopener">↗ Página da oferta</a>` : ''}
+          ${adv.library_url ? `<a class="tag" href="${esc(adv.library_url)}" target="_blank" rel="noopener">↗ Meta Ads Library</a>` : ''}
+          <label class="sec" style="font-size:12px;display:inline-flex;gap:6px;align-items:center">Status
+            <select class="status-sel" id="setstatus" ${state.canWrite ? '' : 'disabled'}>${Object.entries(STATUS).map(([k, s]) => `<option value="${k}" ${k === o.status ? 'selected' : ''}>${s[0]} ${s[1]}</option>`).join('')}</select></label>
+        </div>
+      </div>
+      <div class="bigs">
+        <div class="big"><div class="l">Velocity Score</div><div class="v">${Math.round(o.velocity_score ?? 0)}<small>/100</small></div><div class="c">confiança ${Math.round(o.velocity_confidence ?? 0)}/100</div></div>
+        <div class="big"><div class="l">Score Mar Azul</div><div class="v" style="color:var(--blue)">${Math.round(o.blue_ocean_score ?? 0)}<small>/100</small></div><div class="c">confiança ${Math.round(o.blue_ocean_confidence ?? 0)}/100</div></div>
+      </div>
+    </section>
+    <section class="minis">
+      <div class="mini"><div class="l">Criativos distintos</div><div class="v">${num(m.distinct_creatives)}</div></div>
+      <div class="mini"><div class="l">Anúncios ativos</div><div class="v">${num(m.observed_ads)}</div></div>
+      <div class="mini"><div class="l">Novos 7d / 14d</div><div class="v">${num(m.new_7d)} / ${num(m.new_14d)}</div></div>
+      <div class="mini"><div class="l">Novos 30d / 40d</div><div class="v">${num(m.new_30d)} / ${num(m.new_40d)}</div></div>
+      <div class="mini"><div class="l">Antigos ativos (30d+)</div><div class="v">${num(m.old_active)}</div></div>
+      <div class="mini"><div class="l">Aceleração</div><div class="v" style="font-size:14px;margin-top:4px">${ACC[acc.signal] || '—'}</div></div>
+    </section>
+    <div class="g2">
+      <section class="panel"><div class="ph"><h2>Criativos × data</h2><span class="muted" style="font-size:12px">1 ponto por rodada</span></div><div class="pb">${lineChart(pts, 'criativos')}
+        <div class="note">${esc(acc.explanation || 'Sem sinal ainda.')}${acc.estimated ? ' Aceleração real precisa de 2+ rodadas com 10h+ de intervalo.' : ''} Δ7d <b class="mono">${acc.delta_7d ?? '—'}</b> · Δ14d <b class="mono">${acc.delta_14d ?? '—'}</b></div></div></section>
+      <section class="panel"><div class="ph"><h2>Lançamento de criativos (40 dias)</h2></div><div class="pb">${launchBars(o.launch_timeline)}<div class="note">Datas de início dos criativos ativos; pausados não aparecem.</div></div></section>
+    </div>
+    <div class="g2">
+      <section class="panel"><div class="ph"><h2>Velocity — composição</h2><span class="mono muted">${Math.round(vel.score ?? 0)} pts</span></div><div class="pb"><div class="brk">${breakdown(vel.components, VEL)}</div>${(vel.notes || []).length ? `<div class="note">${esc(vel.notes.join(' · '))}</div>` : ''}</div></section>
+      <section class="panel"><div class="ph"><h2>Mar Azul — composição</h2><span class="mono muted">${Math.round(blue.score ?? 0)} pts</span></div><div class="pb"><div class="brk">${breakdown(blue.components, BLUE, blue.evidence, true)}</div></div></section>
+    </div>
+    <section class="panel">
+      <div class="ph"><div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button class="tab" role="tab" data-tab="${k}" aria-selected="${state.tab === k}">${l}</button>`).join('')}</div></div>
+      <div class="pb">${(tabBody[state.tab] || tabBody.ads)()}</div>
+    </section>
+  </div>`;
+  $('#back').onclick = () => { location.hash = ''; };
+  document.querySelectorAll('[data-tab]').forEach((b) => b.onclick = () => { state.tab = b.dataset.tab; renderOffer(id); });
+  document.querySelectorAll('[data-go]').forEach((r) => r.onclick = () => { location.hash = 'o' + r.dataset.go; });
+  const sel = $('#setstatus'); if (sel) sel.onchange = () => setStatus(o, sel.value);
+}
+
+async function setStatus(o, status) {
+  if (!state.db) { toast('Sem conexão com o banco do app — status não salvo.'); return; }
+  const history = [...(o.history || []), [new Date().toISOString(), status, 'alterado manualmente no app']];
+  try {
+    await state.db.doc('offers/o' + o.id).update({ status, status_locked: true, history });
+    toast(`Status salvo: ${STATUS[status][1]}`);
+  } catch (e) {
+    toast(e?.code === 'permission_denied' || e?.code === 'not_granted' ? 'Você só tem acesso de leitura a este radar.' : 'Não deu para salvar o status. Tente de novo.');
+    route();
+  }
+}
+
+function route() {
+  renderPill();
+  const m = /^#o(\d+)$/.exec(location.hash);
+  if (m) renderOffer(m[1]); else renderList();
+}
+window.addEventListener('hashchange', () => { state.tab = 'ads'; route(); window.scrollTo(0, 0); });
+
+(async () => {
+  const db = await window.claude?.use?.('db').catch(() => null);
+  if (!db) { state.loaded = true; $('#view').innerHTML = '<div class="panel"><div class="empty">Abra este radar logado no claude.ai para ver os dados sincronizados.</div></div>'; renderPill(); return; }
+  state.db = db;
+  db.collection('offers').onSnapshot((snap) => {
+    state.offers = new Map(snap.docs.map((d) => [Number(d.data().id), d.data()]));
+    state.loaded = true;
+    if (!document.activeElement || document.activeElement.id !== 'q') route();
+  }, () => { state.loaded = true; route(); });
+  db.doc('radar/summary').onSnapshot((d) => { state.summary = d.exists ? d.data() : null; route(); }, () => {});
+  try { const u = await window.claude.use('user'); if (u) { const c = u.can('data.write'); if (c === false) state.canWrite = false; } } catch { /* sem info: mantém o seletor */ }
+})();
+</script>
